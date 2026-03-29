@@ -1,30 +1,41 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import { AppContext } from '../App'
-
-const CROP_DATA = {
-  '洋葱': { price:'1.85', change:'+0.05', up:true, unit:'元/斤', region:'甘肃民勤' },
-  '大蒜': { price:'4.20', change:'+0.15', up:true, unit:'元/斤', region:'山东金乡' },
-  '土豆': { price:'0.95', change:'-0.03', up:false, unit:'元/斤', region:'甘肃定西' },
-  '玉米': { price:'1.12', change:'+0.02', up:true, unit:'元/斤', region:'黑龙江' },
-  '白菜': { price:'0.42', change:'-0.05', up:false, unit:'元/斤', region:'河北张家口' },
-  '辣椒': { price:'3.60', change:'+0.20', up:true, unit:'元/斤', region:'贵州遵义' },
-  '番茄': { price:'2.10', change:'-0.10', up:false, unit:'元/斤', region:'新疆石河子' },
-  '胡萝卜': { price:'0.88', change:'+0.03', up:true, unit:'元/斤', region:'河北保定' },
-}
+import { supabase } from '../supabase'
 
 const NOTICES = [
   { icon:'🌧️', type:'warn', title:'近期天气预警', desc:'本周四至周六有小雨，注意做好田间排水，防止积水烂根。' },
   { icon:'🌱', type:'farm', title:'追肥建议', desc:'当前处于鳞茎膨大期，建议追施钾肥，提高产量和耐储性。' },
   { icon:'🐛', type:'pest', title:'病虫害防治', desc:'近期温湿度适合蓟马繁殖，注意及时检查叶片，必要时喷施杀虫剂。' },
 ]
-
 const TABS = ['一周', '一月', '三月', '半年']
 
 export default function Home() {
   const { currentCrop } = useContext(AppContext)
   const [activeTab, setActiveTab] = useState(0)
   const [showForecast, setShowForecast] = useState(false)
-  const data = CROP_DATA[currentCrop.name] || CROP_DATA['洋葱']
+  const [priceData, setPriceData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => { fetchPrice() }, [currentCrop])
+
+  async function fetchPrice() {
+    setLoading(true)
+    // 取默认产区（第一条，价格最高的）
+    const { data, error } = await supabase
+      .from('crop_prices')
+      .select('*')
+      .eq('crop', currentCrop.name)
+      .order('price', { ascending: false })
+      .limit(1)
+    if (!error && data && data.length > 0) setPriceData(data[0])
+    else setPriceData(null)
+    setLoading(false)
+  }
+
+  const price = priceData?.price ?? '—'
+  const change = priceData?.change_amount ?? 0
+  const region = priceData?.region ?? '数据更新中'
+  const isUp = change >= 0
 
   return (
     <div>
@@ -32,19 +43,26 @@ export default function Home() {
       <div style={{ background:'linear-gradient(135deg,#1E5C30,#2D7A45,#3D9960)', padding:'20px 20px 28px', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }}/>
         <div style={{ fontSize:13, color:'rgba(255,255,255,0.8)', background:'rgba(255,255,255,0.15)', display:'inline-flex', alignItems:'center', gap:4, borderRadius:20, padding:'3px 12px', marginBottom:10 }}>
-          📍 {data.region}
+          📍 {region}
         </div>
         <div style={{ fontSize:12, color:'rgba(255,255,255,0.6)', marginBottom:4 }}>今日收购均价</div>
         <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:8 }}>
-          <span style={{ fontSize:52, fontWeight:700, color:'#fff', lineHeight:1 }}>{data.price}</span>
-          <span style={{ fontSize:16, color:'rgba(255,255,255,0.75)' }}>{data.unit}</span>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{ background: data.up ? 'rgba(76,175,107,0.25)' : 'rgba(229,74,74,0.25)', border: `1px solid ${data.up ? 'rgba(76,175,107,0.4)' : 'rgba(229,74,74,0.4)'}`, color: data.up ? '#7EDDA0' : '#FF8080', fontSize:12, fontWeight:600, padding:'3px 12px', borderRadius:20 }}>
-            {data.up ? '▲' : '▼'} {data.change}元
+          <span style={{ fontSize:52, fontWeight:700, color:'#fff', lineHeight:1 }}>
+            {loading ? '…' : price}
           </span>
-          <span style={{ fontSize:12, color:'rgba(255,255,255,0.5)' }}>较昨日</span>
+          <span style={{ fontSize:16, color:'rgba(255,255,255,0.75)' }}>元/斤</span>
         </div>
+        {!loading && priceData && (
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ background: isUp ? 'rgba(76,175,107,0.25)' : 'rgba(229,74,74,0.25)', border: `1px solid ${isUp ? 'rgba(76,175,107,0.4)' : 'rgba(229,74,74,0.4)'}`, color: isUp ? '#7EDDA0' : '#FF8080', fontSize:12, fontWeight:600, padding:'3px 12px', borderRadius:20 }}>
+              {isUp ? '▲' : '▼'} {Math.abs(change)}元
+            </span>
+            <span style={{ fontSize:12, color:'rgba(255,255,255,0.5)' }}>较昨日 · {new Date(priceData.created_at).toLocaleDateString('zh-CN')}</span>
+          </div>
+        )}
+        {!loading && !priceData && (
+          <div style={{ fontSize:13, color:'rgba(255,255,255,0.6)' }}>暂无数据，请在后台添加</div>
+        )}
       </div>
 
       {/* Trend */}
@@ -105,10 +123,10 @@ export default function Home() {
           </div>
           <div style={{ flex:1, overflowY:'auto', padding:20 }}>
             {[
-              { name:'季节性规律', pct:35, color:'var(--green)', desc:'3-4月为青黄不接期，历史数据显示此阶段价格上涨概率达78%。' },
-              { name:'气候影响', pct:25, color:'var(--green)', desc:'近期产区有小雨天气，不利运输，短期内可能推高价格0.05-0.10元/斤。' },
-              { name:'市场供需', pct:25, color:'var(--green)', desc:'全国主要产区库存较去年同期下降约15%，供需缺口支撑价格上行。' },
-              { name:'政策因素', pct:15, color:'var(--gold)', desc:'目前无重大政策性影响，出口端保持稳定，对价格影响中性。' },
+              { name:'季节性规律', pct:35, desc:'3-4月为青黄不接期，历史数据显示此阶段价格上涨概率达78%。' },
+              { name:'气候影响', pct:25, desc:'近期产区有小雨天气，不利运输，短期内可能推高价格0.05-0.10元/斤。' },
+              { name:'市场供需', pct:25, desc:'全国主要产区库存较去年同期下降约15%，供需缺口支撑价格上行。' },
+              { name:'政策因素', pct:15, desc:'目前无重大政策性影响，出口端保持稳定，对价格影响中性。' },
             ].map(f => (
               <div key={f.name} style={{ background:'var(--white)', borderRadius:'var(--radius)', padding:16, marginBottom:12, boxShadow:'var(--shadow-sm)' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
@@ -116,7 +134,7 @@ export default function Home() {
                   <span style={{ fontSize:13, fontWeight:700, background:'var(--green-pale)', color:'var(--green)', borderRadius:20, padding:'2px 12px' }}>权重 {f.pct}%</span>
                 </div>
                 <div style={{ height:6, background:'var(--border)', borderRadius:3, overflow:'hidden', marginBottom:8 }}>
-                  <div style={{ height:'100%', width:`${f.pct}%`, background:f.color, borderRadius:3 }}/>
+                  <div style={{ height:'100%', width:`${f.pct}%`, background:'var(--green)', borderRadius:3 }}/>
                 </div>
                 <div style={{ fontSize:13, color:'var(--text-mid)', lineHeight:1.5 }}>{f.desc}</div>
               </div>
