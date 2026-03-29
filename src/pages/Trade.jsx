@@ -59,7 +59,7 @@ export default function Trade() {
       {/* Tabs */}
       <div style={{ display:'flex', padding:'0 20px', borderBottom:'1px solid var(--border)', background:'var(--white)' }}>
         {[['all','全部信息'],['buy','求购'],['sell','出售']].map(([v,l]) => (
-          <button key={v} onClick={() => setTab(v)} style={{ flex:1, paddingBottom:12, paddingTop:14, fontSize:15, fontWeight:600, color: tab===v ? 'var(--green)' : 'var(--text-light)', borderBottom: tab===v ? '3px solid var(--green)' : '3px solid transparent', background:'none', border:'none', borderBottom: tab===v ? '3px solid var(--green)' : '3px solid transparent' }}>{l}</button>
+          <button key={v} onClick={() => setTab(v)} style={{ flex:1, paddingBottom:12, paddingTop:14, fontSize:15, fontWeight:600, color: tab===v ? 'var(--green)' : 'var(--text-light)', background:'none', border:'none', borderBottom: tab===v ? '3px solid var(--green)' : '3px solid transparent' }}>{l}</button>
         ))}
       </div>
 
@@ -118,7 +118,7 @@ export default function Trade() {
               </div>
             ))}
             <div style={{ background:'var(--green-pale)', borderRadius:'var(--radius-sm)', padding:12, fontSize:13, color:'var(--text-mid)' }}>
-              ℹ️ 信息发布后有效期30天，到期自动下架。发布需实名认证（手机号绑定）。
+              ℹ️ 信息发布后有效期30天，到期自动下架。
             </div>
           </div>
         </div>
