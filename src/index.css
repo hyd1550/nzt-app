@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
-
+/* 使用系统字体，完全无需外部加载，国内访问流畅 */
 :root {
   --green: #2D7A45;
   --green-light: #4CAF6B;
@@ -25,7 +24,8 @@
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 body {
-  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  /* 优先使用系统自带中文字体，无需网络加载 */
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', 'Noto Sans CJK SC', sans-serif;
   background: var(--bg);
   color: var(--text-dark);
   max-width: 480px;
